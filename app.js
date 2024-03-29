@@ -6,12 +6,16 @@ const server = http.createServer(app);
 const io = new Server(server);
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const mongoose = require('./config/config')()
 const port = 3000;
 const cors = require("cors");
 const secretKey = process.env.JWT_TOKEN;
 
 app.use(cors());
 app.use(express.json());
+
+const Commonroutes = require('./router/commonRouter')
+app.use('/',Commonroutes)
 
 let connectedUsers = [];
 
@@ -21,21 +25,19 @@ io.on("connection", (socket) => {
   socket.on("userConnection", ({ token }) => {
     const adminEmail = jwt.verify(token, secretKey).email;
     connectedUsers[adminEmail] = socket.id;
-    console.log(adminEmail, "adminEmail");
-    console.log(connectedUsers, "arrayyy ");
-    socket.on("message", ({ recieverEmail, message }) => {
-      const recieverId = connectedUsers[recieverEmail];
+    socket.on("message", ({ sender, reciever, message }) => {
+      const recieverId = connectedUsers[reciever];
       console.log(recieverId, "reciever  id ");
       console.log(message, "message");
       if (recieverId) {
         io.to(recieverId).emit("recieverMessage", {
           message,
-          recieverEmail,
-          senderEmail: adminEmail,
+          reciever,
+          sender,
         });
-        console.log(`${message} to ${recieverEmail}`);
+        console.log(`${message} to ${reciever}`);
       } else {
-        console.log(` resiptiont ${recieverEmail} not found`);
+        console.log(` resiptiont ${reciever} not found`);
       }
     });
   });
